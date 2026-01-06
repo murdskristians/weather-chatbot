@@ -5,14 +5,18 @@ interface ChatInputProps {
   onSend: (message: string) => void;
   isLoading: boolean;
   placeholder?: string;
+  messageHistory: string[];
 }
 
-const ChatInput = ({ 
-  onSend, 
-  isLoading, 
-  placeholder = "Ask about weather in any city..." 
+const ChatInput = ({
+  onSend,
+  isLoading,
+  placeholder = "Ask about weather in any city...",
+  messageHistory,
 }: ChatInputProps) => {
   const [input, setInput] = useState('');
+  const [historyIndex, setHistoryIndex] = useState(-1);
+  const [savedInput, setSavedInput] = useState('');
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -20,6 +24,8 @@ const ChatInput = ({
     if (input.trim() && !isLoading) {
       onSend(input.trim());
       setInput('');
+      setHistoryIndex(-1);
+      setSavedInput('');
     }
   };
 
@@ -27,6 +33,31 @@ const ChatInput = ({
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       handleSubmit(e);
+    } else if (e.key === 'ArrowUp') {
+      if (messageHistory.length === 0) return;
+
+      e.preventDefault();
+
+      if (historyIndex === -1) {
+        setSavedInput(input);
+      }
+
+      const newIndex = Math.min(historyIndex + 1, messageHistory.length - 1);
+      setHistoryIndex(newIndex);
+      setInput(messageHistory[messageHistory.length - 1 - newIndex]);
+    } else if (e.key === 'ArrowDown') {
+      if (historyIndex === -1) return;
+
+      e.preventDefault();
+
+      const newIndex = historyIndex - 1;
+      setHistoryIndex(newIndex);
+
+      if (newIndex === -1) {
+        setInput(savedInput);
+      } else {
+        setInput(messageHistory[messageHistory.length - 1 - newIndex]);
+      }
     }
   };
 

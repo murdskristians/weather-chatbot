@@ -7,7 +7,7 @@ import { CloudSun, Trash2 } from 'lucide-react';
 import './App.css';
 
 const App = () => {
-  const { messages, isLoading, sendMessage, clearChat } = useChat();
+  const { messages, isLoading, sendMessage, clearChat, userMessageHistory } = useChat();
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -37,7 +37,7 @@ const App = () => {
       </main>
 
       <footer className="chat-footer">
-        <ChatInput onSend={sendMessage} isLoading={isLoading} />
+        <ChatInput onSend={sendMessage} isLoading={isLoading} messageHistory={userMessageHistory} />
       </footer>
     </div>
   );

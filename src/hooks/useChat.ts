@@ -82,12 +82,17 @@ export const useChat = () => {
     setLastLocation(null);
   }, []);
 
+  const userMessageHistory = messages
+    .filter((m) => m.role === 'user')
+    .map((m) => m.content);
+
   return {
     messages,
     isLoading,
     sendMessage: processQuery,
     clearChat,
     lastLocation,
+    userMessageHistory,
   };
 };
 
