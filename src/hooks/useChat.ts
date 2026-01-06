@@ -63,21 +63,20 @@ export const useChat = () => {
   const [lastLocation, setLastLocation] = useState<GeoLocation | null>(null);
 
   // Re-translate all assistant messages when language changes
+  // Note: Only regenerates text content, preserves existing insights
   useEffect(() => {
     const regenerateMessages = async () => {
       const updatedMessages = await Promise.all(
         messages.map(async (msg) => {
           if (msg.role === 'assistant' && msg.meta) {
+            // Only regenerate insight if message already has one (preserve toggle state at send time)
             let newInsight = msg.insight;
-            // Regenerate insight for weather messages if insights are enabled
-            if (msg.meta.type === 'weather' && msg.weatherData && isInsightEnabled() && thinkingMode) {
+            if (msg.insight && msg.meta.type === 'weather' && msg.weatherData && isInsightEnabled()) {
               newInsight = await generateWeatherInsight(
                 msg.weatherData,
                 msg.meta.aiIntent || null,
                 language
               );
-            } else if (!thinkingMode) {
-              newInsight = null;
             }
             return {
               ...msg,
@@ -92,7 +91,7 @@ export const useChat = () => {
     };
 
     regenerateMessages();
-  }, [language, thinkingMode]);
+  }, [language]);
 
   const addMessage = useCallback((
     role: 'user' | 'assistant',
