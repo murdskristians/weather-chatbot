@@ -4,6 +4,7 @@ import { geocodeLocation, extractLocationFromQuery } from '../services/geocoding
 import { fetchWeatherData } from '../services/weatherApi';
 import { generateWeatherResponse, generateErrorResponse, Language } from '../services/ragEngine';
 import { parseQueryWithAI, isGroqConfigured } from '../services/aiQueryParser';
+import { generateWeatherInsight, isInsightEnabled } from '../services/aiInsightGenerator';
 import { getTranslations } from '../utils/translations';
 
 const generateId = () => Math.random().toString(36).substring(2, 15);
@@ -57,28 +58,45 @@ export const useChat = () => {
     },
   ]);
   const [isLoading, setIsLoading] = useState(false);
+  const [isThinking, setIsThinking] = useState(false);
   const [lastLocation, setLastLocation] = useState<GeoLocation | null>(null);
 
   // Re-translate all assistant messages when language changes
   useEffect(() => {
-    setMessages((prevMessages) =>
-      prevMessages.map((msg) => {
-        if (msg.role === 'assistant' && msg.meta) {
-          return {
-            ...msg,
-            content: regenerateMessageContent(msg, language),
-          };
-        }
-        return msg;
-      })
-    );
+    const regenerateMessages = async () => {
+      const updatedMessages = await Promise.all(
+        messages.map(async (msg) => {
+          if (msg.role === 'assistant' && msg.meta) {
+            let newInsight = msg.insight;
+            // Regenerate insight for weather messages if insights are enabled
+            if (msg.meta.type === 'weather' && msg.weatherData && isInsightEnabled()) {
+              newInsight = await generateWeatherInsight(
+                msg.weatherData,
+                msg.meta.aiIntent || null,
+                language
+              );
+            }
+            return {
+              ...msg,
+              content: regenerateMessageContent(msg, language),
+              insight: newInsight,
+            };
+          }
+          return msg;
+        })
+      );
+      setMessages(updatedMessages);
+    };
+
+    regenerateMessages();
   }, [language]);
 
   const addMessage = useCallback((
     role: 'user' | 'assistant',
     content: string,
     weatherData?: WeatherData | null,
-    meta?: MessageMeta
+    meta?: MessageMeta,
+    insight?: string | null
   ) => {
     const newMessage: Message = {
       id: generateId(),
@@ -87,6 +105,7 @@ export const useChat = () => {
       timestamp: new Date(),
       weatherData,
       meta,
+      insight,
     };
     setMessages((prev) => [...prev, newMessage]);
 
@@ -142,6 +161,16 @@ export const useChat = () => {
 
       const weatherData = await fetchWeatherData(location);
 
+      // Generate AI insight if enabled
+      let insight: string | null = null;
+      if (isInsightEnabled()) {
+        setIsThinking(true);
+        setIsLoading(false);
+        insight = await generateWeatherInsight(weatherData, aiIntent, language);
+        setIsThinking(false);
+        setIsLoading(true);
+      }
+
       const response = generateWeatherResponse(
         query,
         weatherData,
@@ -157,7 +186,7 @@ export const useChat = () => {
         aiIntent,
         aiTimeframe,
         aiSpecificDate,
-      });
+      }, insight);
 
     } catch (error) {
       console.error('Error processing query:', error);
@@ -191,6 +220,7 @@ export const useChat = () => {
   return {
     messages,
     isLoading,
+    isThinking,
     sendMessage: processQuery,
     clearChat,
     lastLocation,

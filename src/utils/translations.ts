@@ -83,6 +83,9 @@ interface Translations {
   // Welcome message
   welcomeMessage: string;
   chatCleared: string;
+
+  // AI thinking
+  thinking: string;
 }
 
 const translations: Record<Language, Translations> = {
@@ -169,6 +172,9 @@ const translations: Record<Language, Translations> = {
     // Welcome message
     welcomeMessage: "Hi! I'm your weather assistant. Ask me anything about the weather in any city around the world!\n\nTry questions like:\n• \"What's the weather in Tokyo?\"\n• \"Will it rain in London tomorrow?\"\n• \"Show me the forecast for New York this week\"\n• \"What's the UV index in Sydney?\"",
     chatCleared: 'Chat cleared! How can I help you with the weather today?',
+
+    // AI thinking
+    thinking: 'Thinking...',
   },
 
   lv: {
@@ -254,6 +260,9 @@ const translations: Record<Language, Translations> = {
     // Welcome message
     welcomeMessage: 'Sveiki! Es esmu jūsu laika asistents. Jautājiet man par laiku jebkurā pilsētā pasaulē!\n\nMēģiniet jautāt:\n• "Kāds laiks Rīgā?"\n• "Vai rīt līs Liepājā?"\n• "Parādi nedēļas prognozi Jelgavai"\n• "Kāds UV indekss Jūrmalā?"',
     chatCleared: 'Čats notīrīts! Kā varu palīdzēt ar laika prognozi šodien?',
+
+    // AI thinking
+    thinking: 'Domāju...',
   },
 
   ru: {
@@ -339,6 +348,9 @@ const translations: Record<Language, Translations> = {
     // Welcome message
     welcomeMessage: 'Привет! Я ваш погодный помощник. Спрашивайте о погоде в любом городе мира!\n\nПопробуйте спросить:\n• "Какая погода в Москве?"\n• "Будет ли дождь в Киеве завтра?"\n• "Покажи прогноз на неделю для Риги"\n• "Какой УФ-индекс в Одессе?"',
     chatCleared: 'Чат очищен! Чем могу помочь с погодой сегодня?',
+
+    // AI thinking
+    thinking: 'Думаю...',
   },
 
   uk: {
@@ -424,6 +436,9 @@ const translations: Record<Language, Translations> = {
     // Welcome message
     welcomeMessage: 'Привіт! Я ваш погодний помічник. Запитуйте про погоду в будь-якому місті світу!\n\nСпробуйте запитати:\n• "Яка погода в Києві?"\n• "Чи буде дощ у Львові завтра?"\n• "Покажи прогноз на тиждень для Одеси"\n• "Який УФ-індекс у Харкові?"',
     chatCleared: 'Чат очищено! Чим можу допомогти з погодою сьогодні?',
+
+    // AI thinking
+    thinking: 'Думаю...',
   },
 };
 

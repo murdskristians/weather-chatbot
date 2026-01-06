@@ -4,16 +4,18 @@ import ChatMessage from './components/ChatMessage';
 import ChatInput from './components/ChatInput';
 import TypingIndicator from './components/TypingIndicator';
 import { LanguageSwitcher } from './components/LanguageSwitcher';
+import { getTranslations } from './utils/translations';
 import { CloudSun, Trash2 } from 'lucide-react';
 import './App.css';
 
 const App = () => {
-  const { messages, isLoading, sendMessage, clearChat, userMessageHistory, language, setLanguage } = useChat();
+  const { messages, isLoading, isThinking, sendMessage, clearChat, userMessageHistory, language, setLanguage } = useChat();
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const tr = getTranslations(language);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages, isLoading]);
+  }, [messages, isLoading, isThinking]);
 
   return (
     <div className="app">
@@ -35,6 +37,7 @@ const App = () => {
           {messages.map((message) => (
             <ChatMessage key={message.id} message={message} />
           ))}
+          {isThinking && <TypingIndicator text={tr.thinking} />}
           {isLoading && <TypingIndicator />}
           <div ref={messagesEndRef} />
         </div>

@@ -1,5 +1,5 @@
 import { Message } from '../types/weather';
-import { User, Bot } from 'lucide-react';
+import { User, Bot, Sparkles } from 'lucide-react';
 import WeatherCard from './WeatherCard';
 
 interface ChatMessageProps {
@@ -45,6 +45,12 @@ const ChatMessage = ({ message }: ChatMessageProps) => {
         )}
       </div>
       <div className="message-content">
+        {message.insight && (
+          <div className="message-insight">
+            <Sparkles size={16} />
+            <span>{message.insight}</span>
+          </div>
+        )}
         <div className="message-text">
           {formatContent(message.content)}
         </div>

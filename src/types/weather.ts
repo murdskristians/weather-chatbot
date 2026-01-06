@@ -15,6 +15,7 @@ export interface Message {
   weatherData?: WeatherData | null;
   isLoading?: boolean;
   meta?: MessageMeta;
+  insight?: string | null;
 }
 
 export interface WeatherData {

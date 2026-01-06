@@ -1,17 +1,28 @@
-import { Bot } from 'lucide-react';
+import { Bot, Sparkles } from 'lucide-react';
 
-const TypingIndicator = () => {
+interface TypingIndicatorProps {
+  text?: string;
+}
+
+const TypingIndicator = ({ text }: TypingIndicatorProps) => {
   return (
     <div className="message message-assistant">
       <div className="message-avatar">
         <Bot size={20} />
       </div>
       <div className="message-content">
-        <div className="typing-indicator">
-          <span></span>
-          <span></span>
-          <span></span>
-        </div>
+        {text ? (
+          <div className="thinking-indicator">
+            <Sparkles size={16} className="thinking-icon" />
+            <span>{text}</span>
+          </div>
+        ) : (
+          <div className="typing-indicator">
+            <span></span>
+            <span></span>
+            <span></span>
+          </div>
+        )}
       </div>
     </div>
   );
