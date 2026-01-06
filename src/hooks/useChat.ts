@@ -2,17 +2,21 @@ import { useState, useCallback } from 'react';
 import { Message, WeatherData, GeoLocation } from '../types/weather';
 import { geocodeLocation, extractLocationFromQuery } from '../services/geocoding';
 import { fetchWeatherData } from '../services/weatherApi';
-import { generateWeatherResponse, generateErrorResponse } from '../services/ragEngine';
+import { generateWeatherResponse, generateErrorResponse, Language } from '../services/ragEngine';
 import { parseQueryWithAI, isGroqConfigured } from '../services/aiQueryParser';
+import { getTranslations } from '../utils/translations';
 
 const generateId = () => Math.random().toString(36).substring(2, 15);
 
 export const useChat = () => {
+  const [language, setLanguage] = useState<Language>('en');
+  const tr = getTranslations(language);
+
   const [messages, setMessages] = useState<Message[]>([
     {
       id: generateId(),
       role: 'assistant',
-      content: "Hi! I'm your weather assistant. Ask me anything about the weather in any city around the world! 🌍\n\nTry questions like:\n• \"What's the weather in Tokyo?\"\n• \"Will it rain in London tomorrow?\"\n• \"Show me the forecast for New York this week\"\n• \"What's the UV index in Sydney?\"",
+      content: tr.welcomeMessage,
       timestamp: new Date(),
     },
   ]);
@@ -68,8 +72,8 @@ export const useChat = () => {
 
       if (!location) {
         const errorMessage = locationQuery
-          ? generateErrorResponse('location_not_found')
-          : generateErrorResponse('no_location');
+          ? generateErrorResponse('location_not_found', language)
+          : generateErrorResponse('no_location', language);
         addMessage('assistant', errorMessage);
 
         return;
@@ -79,29 +83,30 @@ export const useChat = () => {
 
       const weatherData = await fetchWeatherData(location);
 
-      const response = generateWeatherResponse(query, weatherData, aiIntent, aiTimeframe, aiSpecificDate);
+      const response = generateWeatherResponse(query, weatherData, aiIntent, aiTimeframe, aiSpecificDate, language);
 
       addMessage('assistant', response, weatherData);
 
     } catch (error) {
       console.error('Error processing query:', error);
-      addMessage('assistant', generateErrorResponse('api_error'));
+      addMessage('assistant', generateErrorResponse('api_error', language));
     } finally {
       setIsLoading(false);
     }
-  }, [addMessage, lastLocation]);
+  }, [addMessage, lastLocation, language]);
 
   const clearChat = useCallback(() => {
+    const currentTr = getTranslations(language);
     setMessages([
       {
         id: generateId(),
         role: 'assistant',
-        content: "Chat cleared! How can I help you with the weather today? 🌤️",
+        content: currentTr.chatCleared,
         timestamp: new Date(),
       },
     ]);
     setLastLocation(null);
-  }, []);
+  }, [language]);
 
   const userMessageHistory = messages
     .filter((m) => m.role === 'user')
@@ -114,6 +119,8 @@ export const useChat = () => {
     clearChat,
     lastLocation,
     userMessageHistory,
+    language,
+    setLanguage,
   };
 };
 

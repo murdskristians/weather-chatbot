@@ -1,5 +1,8 @@
 import { WeatherData } from '../types/weather';
 import { getWeatherInfo, getWindDirection, formatTime, formatDate } from '../utils/weatherCodes';
+import { Language, getTranslations } from '../utils/translations';
+
+export type { Language };
 
 type QueryIntent = 
   | 'current_weather'
@@ -49,144 +52,150 @@ const detectIntent = (query: string): QueryIntent[] => {
   return intents;
 };
 
-const generateCurrentWeatherResponse = (weather: WeatherData): string => {
+const generateCurrentWeatherResponse = (weather: WeatherData, lang: Language = 'en'): string => {
   const { current, location, country } = weather;
   const weatherInfo = getWeatherInfo(current.weatherCode);
   const windDir = getWindDirection(current.windDirection);
-  
-  return `**Current weather in ${location}, ${country}** ${weatherInfo.icon}
+  const tr = getTranslations(lang);
 
-${weatherInfo.description} with a temperature of **${Math.round(current.temperature)}°C** (feels like ${Math.round(current.apparentTemperature)}°C).
+  return `**${tr.currentWeatherIn} ${location}, ${country}** ${weatherInfo.icon}
 
-• **Humidity:** ${current.humidity}%
-• **Wind:** ${Math.round(current.windSpeed)} km/h from ${windDir} (gusts up to ${Math.round(current.windGusts)} km/h)
-• **Cloud cover:** ${current.cloudCover}%
-• **Pressure:** ${Math.round(current.pressure)} hPa
-${current.precipitation > 0 ? `• **Precipitation:** ${current.precipitation} mm` : ''}`;
+${weatherInfo.description} ${tr.with} **${Math.round(current.temperature)}°C** (${tr.feelsLike.toLowerCase()} ${Math.round(current.apparentTemperature)}°C).
+
+• **${tr.humidity}:** ${current.humidity}%
+• **${tr.wind}:** ${Math.round(current.windSpeed)} km/h ${tr.fromDirection} ${windDir} (${tr.gustsUpTo} ${Math.round(current.windGusts)} km/h)
+• **${tr.cloudCover}:** ${current.cloudCover}%
+• **${tr.pressure}:** ${Math.round(current.pressure)} hPa
+${current.precipitation > 0 ? `• **${tr.precipitation}:** ${current.precipitation} mm` : ''}`;
 };
 
-const generateTemperatureResponse = (weather: WeatherData): string => {
+const generateTemperatureResponse = (weather: WeatherData, lang: Language = 'en'): string => {
   const { current, daily, location } = weather;
   const today = daily[0];
-  
-  return `**Temperature in ${location}** 🌡️
+  const tr = getTranslations(lang);
 
-Right now it's **${Math.round(current.temperature)}°C** (feels like ${Math.round(current.apparentTemperature)}°C).
+  return `**${tr.temperatureIn} ${location}** 🌡️
 
-Today's range: **${Math.round(today.minTemp)}°C** to **${Math.round(today.maxTemp)}°C**
+${tr.rightNowIts} **${Math.round(current.temperature)}°C** (${tr.feelsLike.toLowerCase()} ${Math.round(current.apparentTemperature)}°C).
 
-**Upcoming days:**
-${daily.slice(1, 5).map(d => 
+${tr.todayRange}: **${Math.round(today.minTemp)}°C** — **${Math.round(today.maxTemp)}°C**
+
+**${tr.upcomingDays}:**
+${daily.slice(1, 5).map(d =>
   `• ${formatDate(d.date)}: ${Math.round(d.minTemp)}°C — ${Math.round(d.maxTemp)}°C`
 ).join('\n')}`;
 };
 
-const generateRainResponse = (weather: WeatherData): string => {
+const generateRainResponse = (weather: WeatherData, lang: Language = 'en'): string => {
   const { current, hourly, daily, location } = weather;
-  
+  const tr = getTranslations(lang);
+
   const next12Hours = hourly.slice(0, 12);
   const rainyHours = next12Hours.filter(h => h.precipitationProbability > 30);
-  
+
   let rainForecast = '';
   if (rainyHours.length === 0) {
-    rainForecast = 'No significant rain expected in the next 12 hours.';
+    rainForecast = tr.noSignificantRain;
   } else {
     const maxProb = Math.max(...rainyHours.map(h => h.precipitationProbability));
     const peakHour = rainyHours.find(h => h.precipitationProbability === maxProb);
-    rainForecast = `Rain likely! Peak probability of ${maxProb}% around ${formatTime(peakHour!.time)}.`;
+    rainForecast = `${tr.rainLikely} ${tr.peakProbability} ${maxProb}% ${tr.around} ${formatTime(peakHour!.time)}.`;
   }
-  
-  return `**Rain forecast for ${location}** 🌧️
 
-**Current:** ${current.precipitation > 0 ? `${current.precipitation} mm precipitation` : 'No precipitation'}
+  return `**${tr.rainForecastFor} ${location}** 🌧️
 
-**Next 12 hours:** ${rainForecast}
+**${tr.current}:** ${current.precipitation > 0 ? `${current.precipitation} mm ${tr.precipitation.toLowerCase()}` : tr.noPrecipitation}
 
-**This week:**
+**${tr.next12Hours}:** ${rainForecast}
+
+**${tr.thisWeek}:**
 ${daily.slice(0, 5).map(d => {
   const emoji = d.precipitationProbability > 50 ? '🌧️' : d.precipitationProbability > 20 ? '🌦️' : '☀️';
 
-  return `• ${formatDate(d.date)}: ${d.precipitationProbability}% chance ${emoji} (${d.precipitationSum} mm expected)`;
+  return `• ${formatDate(d.date)}: ${d.precipitationProbability}% ${tr.chanceOf} ${emoji} (${d.precipitationSum} mm ${tr.expected})`;
 }).join('\n')}
 
-${rainyHours.length > 0 ? '\n☔ **Tip:** You might want to bring an umbrella!' : ''}`;
+${rainyHours.length > 0 ? `\n☔ **${tr.umbrellaAdvice}**` : ''}`;
 };
 
-const generateWindResponse = (weather: WeatherData): string => {
+const generateWindResponse = (weather: WeatherData, lang: Language = 'en'): string => {
   const { current, daily, location } = weather;
   const windDir = getWindDirection(current.windDirection);
-  
+  const tr = getTranslations(lang);
+
   let windAdvice = '';
   if (current.windGusts > 50) {
-    windAdvice = '⚠️ Strong gusts today - secure loose items outdoors!';
+    windAdvice = `⚠️ ${tr.strongGusts}`;
   } else if (current.windSpeed > 30) {
-    windAdvice = 'Moderate winds - might affect outdoor activities.';
+    windAdvice = tr.moderateWinds;
   } else {
-    windAdvice = 'Light winds - good conditions for outdoor activities.';
+    windAdvice = tr.lightWinds;
   }
-  
-  return `**Wind conditions in ${location}** 💨
 
-**Current:**
-• Speed: **${Math.round(current.windSpeed)} km/h** from ${windDir}
-• Gusts: up to **${Math.round(current.windGusts)} km/h**
+  return `**${tr.windConditionsIn} ${location}** 💨
+
+**${tr.current}:**
+• ${tr.speed}: **${Math.round(current.windSpeed)} km/h** ${tr.fromDirection} ${windDir}
+• ${tr.gusts}: **${Math.round(current.windGusts)} km/h**
 
 ${windAdvice}
 
-**This week's max winds:**
-${daily.slice(0, 5).map(d => 
-  `• ${formatDate(d.date)}: ${Math.round(d.windSpeedMax)} km/h (gusts ${Math.round(d.windGustsMax)} km/h)`
+**${tr.thisWeek} ${tr.maxWinds}:**
+${daily.slice(0, 5).map(d =>
+  `• ${formatDate(d.date)}: ${Math.round(d.windSpeedMax)} km/h (${tr.gusts.toLowerCase()} ${Math.round(d.windGustsMax)} km/h)`
 ).join('\n')}`;
 };
 
-const generateHumidityResponse = (weather: WeatherData): string => {
+const generateHumidityResponse = (weather: WeatherData, lang: Language = 'en'): string => {
   const { current, hourly, location } = weather;
-  
+  const tr = getTranslations(lang);
+
   let comfort = '';
   if (current.humidity < 30) {
-    comfort = 'Very dry - consider using moisturizer.';
+    comfort = tr.veryDry;
   } else if (current.humidity < 50) {
-    comfort = 'Comfortable humidity levels.';
+    comfort = tr.comfortableHumidity;
   } else if (current.humidity < 70) {
-    comfort = 'Moderate humidity - slightly muggy.';
+    comfort = tr.moderateHumidity;
   } else {
-    comfort = 'High humidity - may feel uncomfortable.';
+    comfort = tr.highHumidity;
   }
-  
-  return `**Humidity in ${location}** 💧
 
-**Current:** ${current.humidity}%
+  return `**${tr.humidityIn} ${location}** 💧
+
+**${tr.current}:** ${current.humidity}%
 ${comfort}
 
-**Next 12 hours:**
-${hourly.slice(0, 12).filter((_, i) => i % 3 === 0).map(h => 
+**${tr.next12Hours}:**
+${hourly.slice(0, 12).filter((_, i) => i % 3 === 0).map(h =>
   `• ${formatTime(h.time)}: ${h.humidity}%`
 ).join('\n')}`;
 };
 
-const generateUVResponse = (weather: WeatherData): string => {
+const generateUVResponse = (weather: WeatherData, lang: Language = 'en'): string => {
   const { daily, location } = weather;
   const today = daily[0];
-  
+  const tr = getTranslations(lang);
+
   let uvAdvice = '';
   if (today.uvIndex >= 11) {
-    uvAdvice = '☠️ **Extreme UV!** Avoid sun exposure, stay indoors during midday.';
+    uvAdvice = `☠️ **${tr.extremeUV}**`;
   } else if (today.uvIndex >= 8) {
-    uvAdvice = '🔴 **Very high UV!** Wear SPF 50+, hat, and sunglasses. Limit sun exposure.';
+    uvAdvice = `🔴 **${tr.veryHighUV}**`;
   } else if (today.uvIndex >= 6) {
-    uvAdvice = '🟠 **High UV.** Wear SPF 30+, seek shade during midday hours.';
+    uvAdvice = `🟠 **${tr.highUV}**`;
   } else if (today.uvIndex >= 3) {
-    uvAdvice = '🟡 **Moderate UV.** Wear sunscreen if outside for extended periods.';
+    uvAdvice = `🟡 **${tr.moderateUV}**`;
   } else {
-    uvAdvice = '🟢 **Low UV.** Minimal sun protection needed.';
+    uvAdvice = `🟢 **${tr.lowUV}**`;
   }
-  
-  return `**UV Index for ${location}** ☀️
 
-**Today:** UV Index **${Math.round(today.uvIndex)}**
+  return `**${tr.uvIndexFor} ${location}** ☀️
+
+**${tr.today}:** ${tr.uvIndex} **${Math.round(today.uvIndex)}**
 ${uvAdvice}
 
-**This week:**
+**${tr.thisWeek}:**
 ${daily.slice(0, 7).map(d => {
   const level = d.uvIndex >= 8 ? '🔴' : d.uvIndex >= 6 ? '🟠' : d.uvIndex >= 3 ? '🟡' : '🟢';
 
@@ -194,19 +203,20 @@ ${daily.slice(0, 7).map(d => {
 }).join('\n')}`;
 };
 
-const generateSunriseSunsetResponse = (weather: WeatherData): string => {
+const generateSunriseSunsetResponse = (weather: WeatherData, lang: Language = 'en'): string => {
   const { daily, location } = weather;
   const today = daily[0];
   const daylightHours = Math.round(today.daylightDuration / 3600 * 10) / 10;
-  
-  return `**Sunrise & Sunset in ${location}** 🌅
+  const tr = getTranslations(lang);
 
-**Today:**
-• 🌅 Sunrise: **${formatTime(today.sunrise)}**
-• 🌇 Sunset: **${formatTime(today.sunset)}**
-• ☀️ Daylight: **${daylightHours} hours**
+  return `**${tr.sunriseSunsetIn} ${location}** 🌅
 
-**This week:**
+**${tr.today}:**
+• 🌅 ${tr.sunrise}: **${formatTime(today.sunrise)}**
+• 🌇 ${tr.sunset}: **${formatTime(today.sunset)}**
+• ☀️ ${tr.daylight}: **${daylightHours}h**
+
+**${tr.thisWeek}:**
 ${daily.slice(0, 7).map(d => {
   const hours = Math.round(d.daylightDuration / 3600 * 10) / 10;
 
@@ -214,57 +224,62 @@ ${daily.slice(0, 7).map(d => {
 }).join('\n')}`;
 };
 
-const generateDayResponse = (weather: WeatherData, dayIndex: number, label: string): string => {
+const generateDayResponse = (weather: WeatherData, dayIndex: number, label: string, lang: Language = 'en'): string => {
   const day = weather.daily[dayIndex];
+  const tr = getTranslations(lang);
   if (!day) {
-    return `Sorry, I don't have forecast data for ${label}. I can only show forecasts up to 7 days ahead.`;
+    return tr.noForecastData;
   }
   const weatherInfo = getWeatherInfo(day.weatherCode);
   const windDir = getWindDirection(day.windDirection);
 
-  return `**${label} forecast for ${weather.location}** ${weatherInfo.icon}
+  return `**${label} ${weather.location}** ${weatherInfo.icon}
 
 **${weatherInfo.description}**
 
-• 🌡️ **Temperature:** ${Math.round(day.minTemp)}°C to ${Math.round(day.maxTemp)}°C
-• 🤗 **Feels like:** ${Math.round(day.apparentMinTemp)}°C to ${Math.round(day.apparentMaxTemp)}°C
-• 🌧️ **Rain chance:** ${day.precipitationProbability}%
-• 💨 **Wind:** up to ${Math.round(day.windSpeedMax)} km/h from ${windDir}
-• ☀️ **UV Index:** ${Math.round(day.uvIndex)}
-• 🌅 **Sunrise:** ${formatTime(day.sunrise)}
-• 🌇 **Sunset:** ${formatTime(day.sunset)}`;
+• 🌡️ **${tr.temperature}:** ${Math.round(day.minTemp)}°C — ${Math.round(day.maxTemp)}°C
+• 🤗 **${tr.feelsLike}:** ${Math.round(day.apparentMinTemp)}°C — ${Math.round(day.apparentMaxTemp)}°C
+• 🌧️ **${tr.rainChance}:** ${day.precipitationProbability}%
+• 💨 **${tr.wind}:** ${Math.round(day.windSpeedMax)} km/h ${tr.fromDirection} ${windDir}
+• ☀️ **${tr.uvIndex}:** ${Math.round(day.uvIndex)}
+• 🌅 **${tr.sunrise}:** ${formatTime(day.sunrise)}
+• 🌇 **${tr.sunset}:** ${formatTime(day.sunset)}`;
 };
 
-const generateTomorrowResponse = (weather: WeatherData): string => {
-  return generateDayResponse(weather, 1, "Tomorrow's");
+const generateTomorrowResponse = (weather: WeatherData, lang: Language = 'en'): string => {
+  const tr = getTranslations(lang);
+  return generateDayResponse(weather, 1, tr.tomorrowForecastFor, lang);
 };
 
-const generateDayAfterTomorrowResponse = (weather: WeatherData): string => {
-  return generateDayResponse(weather, 2, "Day after tomorrow's");
+const generateDayAfterTomorrowResponse = (weather: WeatherData, lang: Language = 'en'): string => {
+  const tr = getTranslations(lang);
+  return generateDayResponse(weather, 2, tr.dayAfterTomorrowForecastFor, lang);
 };
 
-const generateSpecificDateResponse = (weather: WeatherData, specificDate: string): string => {
+const generateSpecificDateResponse = (weather: WeatherData, specificDate: string, lang: Language = 'en'): string => {
   const targetDate = new Date(specificDate);
   const today = new Date();
   today.setHours(0, 0, 0, 0);
+  const tr = getTranslations(lang);
 
   const diffTime = targetDate.getTime() - today.getTime();
   const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
 
   if (diffDays < 0) {
-    return `Sorry, I can't show weather for past dates. Please ask about today or future dates.`;
+    return tr.pastDateError;
   }
 
   if (diffDays > 6) {
-    return `Sorry, I can only show forecasts up to 7 days ahead. The date ${formatDate(specificDate)} is too far in the future.`;
+    return tr.futureDateError;
   }
 
-  const dateLabel = formatDate(specificDate);
-  return generateDayResponse(weather, diffDays, dateLabel);
+  const dateLabel = `${formatDate(specificDate)} ${tr.forecastFor}`;
+  return generateDayResponse(weather, diffDays, dateLabel, lang);
 };
 
-const generateWeekResponse = (weather: WeatherData): string => {
-  return `**7-Day Forecast for ${weather.location}** 📅
+const generateWeekResponse = (weather: WeatherData, lang: Language = 'en'): string => {
+  const tr = getTranslations(lang);
+  return `**${tr.weekForecastFor} ${weather.location}** 📅
 
 ${weather.daily.map(d => {
   const info = getWeatherInfo(d.weatherCode);
@@ -274,8 +289,9 @@ ${info.description} | ${Math.round(d.minTemp)}° — ${Math.round(d.maxTemp)}° 
 }).join('\n\n')}`;
 };
 
-const generateHourlyResponse = (weather: WeatherData): string => {
-  return `**Hourly forecast for ${weather.location}** ⏰
+const generateHourlyResponse = (weather: WeatherData, lang: Language = 'en'): string => {
+  const tr = getTranslations(lang);
+  return `**${tr.hourlyForecastFor} ${weather.location}** ⏰
 
 ${weather.hourly.slice(0, 12).map(h => {
   const info = getWeatherInfo(h.weatherCode);
@@ -289,16 +305,17 @@ export const generateWeatherResponse = (
   weather: WeatherData,
   aiIntent?: string | null,
   aiTimeframe?: string | null,
-  aiSpecificDate?: string | null
+  aiSpecificDate?: string | null,
+  language: Language = 'en'
 ): string => {
   // Handle specific date first
   if (aiSpecificDate) {
-    return generateSpecificDateResponse(weather, aiSpecificDate);
+    return generateSpecificDateResponse(weather, aiSpecificDate, language);
   }
 
   // Handle day after tomorrow
   if (aiTimeframe === 'day_after_tomorrow') {
-    return generateDayAfterTomorrowResponse(weather);
+    return generateDayAfterTomorrowResponse(weather, language);
   }
 
   // Use AI-detected intent/timeframe if available, otherwise fall back to regex detection
@@ -331,55 +348,56 @@ export const generateWeatherResponse = (
   }
 
   const responses: string[] = [];
-  
+
   for (const intent of intents) {
     switch (intent) {
       case 'tomorrow':
-        responses.push(generateTomorrowResponse(weather));
+        responses.push(generateTomorrowResponse(weather, language));
         break;
       case 'week':
-        responses.push(generateWeekResponse(weather));
+        responses.push(generateWeekResponse(weather, language));
         break;
       case 'hourly':
-        responses.push(generateHourlyResponse(weather));
+        responses.push(generateHourlyResponse(weather, language));
         break;
       case 'rain':
-        responses.push(generateRainResponse(weather));
+        responses.push(generateRainResponse(weather, language));
         break;
       case 'wind':
-        responses.push(generateWindResponse(weather));
+        responses.push(generateWindResponse(weather, language));
         break;
       case 'humidity':
-        responses.push(generateHumidityResponse(weather));
+        responses.push(generateHumidityResponse(weather, language));
         break;
       case 'uv':
-        responses.push(generateUVResponse(weather));
+        responses.push(generateUVResponse(weather, language));
         break;
       case 'sunrise_sunset':
-        responses.push(generateSunriseSunsetResponse(weather));
+        responses.push(generateSunriseSunsetResponse(weather, language));
         break;
       case 'temperature':
-        responses.push(generateTemperatureResponse(weather));
+        responses.push(generateTemperatureResponse(weather, language));
         break;
       case 'current_weather':
       default:
-        responses.push(generateCurrentWeatherResponse(weather));
+        responses.push(generateCurrentWeatherResponse(weather, language));
         break;
     }
   }
-  
+
   const uniqueResponses = [...new Set(responses)];
 
   return uniqueResponses.join('\n\n---\n\n');
 };
 
-export const generateErrorResponse = (error: string): string => {
+export const generateErrorResponse = (error: string, language: Language = 'en'): string => {
+  const tr = getTranslations(language);
   const errorResponses: Record<string, string> = {
-    'location_not_found': "I couldn't find that location. Could you please check the spelling or try a different city name? You can also try adding the country (e.g., 'Paris, France').",
-    'no_location': "I'd love to help with the weather! Please tell me which city you'd like to know about. For example, try asking 'What's the weather in London?' or 'Will it rain in Tokyo?'",
-    'api_error': "I'm having trouble fetching weather data right now. Please try again in a moment.",
+    'location_not_found': tr.locationNotFound,
+    'no_location': tr.noLocation,
+    'api_error': tr.apiError,
   };
-  
-  return errorResponses[error] || "Something went wrong. Please try again!";
+
+  return errorResponses[error] || tr.apiError;
 };
 

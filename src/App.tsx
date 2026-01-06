@@ -3,11 +3,12 @@ import { useChat } from './hooks/useChat';
 import ChatMessage from './components/ChatMessage';
 import ChatInput from './components/ChatInput';
 import TypingIndicator from './components/TypingIndicator';
+import { LanguageSwitcher } from './components/LanguageSwitcher';
 import { CloudSun, Trash2 } from 'lucide-react';
 import './App.css';
 
 const App = () => {
-  const { messages, isLoading, sendMessage, clearChat, userMessageHistory } = useChat();
+  const { messages, isLoading, sendMessage, clearChat, userMessageHistory, language, setLanguage } = useChat();
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -21,9 +22,12 @@ const App = () => {
           <CloudSun size={28} />
           <h1>Weather AI</h1>
         </div>
-        <button onClick={clearChat} className="clear-button" title="Clear chat">
-          <Trash2 size={18} />
-        </button>
+        <div className="header-actions">
+          <LanguageSwitcher language={language} onLanguageChange={setLanguage} />
+          <button onClick={clearChat} className="clear-button" title="Clear chat">
+            <Trash2 size={18} />
+          </button>
+        </div>
       </header>
 
       <main className="chat-container">
