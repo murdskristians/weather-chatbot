@@ -1,3 +1,12 @@
+export interface MessageMeta {
+  type: 'weather' | 'error' | 'welcome' | 'cleared';
+  query?: string;
+  aiIntent?: string | null;
+  aiTimeframe?: string | null;
+  aiSpecificDate?: string | null;
+  errorType?: string;
+}
+
 export interface Message {
   id: string;
   role: 'user' | 'assistant';
@@ -5,6 +14,7 @@ export interface Message {
   timestamp: Date;
   weatherData?: WeatherData | null;
   isLoading?: boolean;
+  meta?: MessageMeta;
 }
 
 export interface WeatherData {

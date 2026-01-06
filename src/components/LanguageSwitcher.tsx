@@ -9,6 +9,7 @@ const languages: { code: Language; label: string; flag: string }[] = [
   { code: 'en', label: 'EN', flag: '' },
   { code: 'lv', label: 'LV', flag: '' },
   { code: 'ru', label: 'RU', flag: '' },
+  { code: 'uk', label: 'UK', flag: '' },
 ];
 
 export const LanguageSwitcher = ({ language, onLanguageChange }: LanguageSwitcherProps) => {
