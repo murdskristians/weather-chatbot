@@ -3,6 +3,7 @@ import { Message, WeatherData, GeoLocation } from '../types/weather';
 import { geocodeLocation, extractLocationFromQuery } from '../services/geocoding';
 import { fetchWeatherData } from '../services/weatherApi';
 import { generateWeatherResponse, generateErrorResponse } from '../services/ragEngine';
+import { parseQueryWithAI, isGroqConfigured } from '../services/aiQueryParser';
 
 const generateId = () => Math.random().toString(36).substring(2, 15);
 
@@ -36,7 +37,27 @@ export const useChat = () => {
     setIsLoading(true);
 
     try {
-      const locationQuery = extractLocationFromQuery(query);
+      let locationQuery: string | null = null;
+      let aiIntent: string | null = null;
+      let aiTimeframe: string | null = null;
+      let aiSpecificDate: string | null = null;
+
+      // Try AI parsing first if Groq is configured
+      if (isGroqConfigured()) {
+        const aiParsed = await parseQueryWithAI(query);
+        if (aiParsed) {
+          locationQuery = aiParsed.location;
+          aiIntent = aiParsed.intent;
+          aiTimeframe = aiParsed.timeframe;
+          aiSpecificDate = aiParsed.specificDate;
+        }
+      }
+
+      // Fall back to regex-based extraction for location
+      if (!locationQuery) {
+        locationQuery = extractLocationFromQuery(query);
+      }
+
       let location: GeoLocation | null = null;
 
       if (locationQuery) {
@@ -46,7 +67,7 @@ export const useChat = () => {
       }
 
       if (!location) {
-        const errorMessage = locationQuery 
+        const errorMessage = locationQuery
           ? generateErrorResponse('location_not_found')
           : generateErrorResponse('no_location');
         addMessage('assistant', errorMessage);
@@ -58,7 +79,7 @@ export const useChat = () => {
 
       const weatherData = await fetchWeatherData(location);
 
-      const response = generateWeatherResponse(query, weatherData);
+      const response = generateWeatherResponse(query, weatherData, aiIntent, aiTimeframe, aiSpecificDate);
 
       addMessage('assistant', response, weatherData);
 

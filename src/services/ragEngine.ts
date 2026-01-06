@@ -214,22 +214,53 @@ ${daily.slice(0, 7).map(d => {
 }).join('\n')}`;
 };
 
-const generateTomorrowResponse = (weather: WeatherData): string => {
-  const tomorrow = weather.daily[1];
-  const weatherInfo = getWeatherInfo(tomorrow.weatherCode);
-  const windDir = getWindDirection(tomorrow.windDirection);
-  
-  return `**Tomorrow's forecast for ${weather.location}** ${weatherInfo.icon}
+const generateDayResponse = (weather: WeatherData, dayIndex: number, label: string): string => {
+  const day = weather.daily[dayIndex];
+  if (!day) {
+    return `Sorry, I don't have forecast data for ${label}. I can only show forecasts up to 7 days ahead.`;
+  }
+  const weatherInfo = getWeatherInfo(day.weatherCode);
+  const windDir = getWindDirection(day.windDirection);
+
+  return `**${label} forecast for ${weather.location}** ${weatherInfo.icon}
 
 **${weatherInfo.description}**
 
-• 🌡️ **Temperature:** ${Math.round(tomorrow.minTemp)}°C to ${Math.round(tomorrow.maxTemp)}°C
-• 🤗 **Feels like:** ${Math.round(tomorrow.apparentMinTemp)}°C to ${Math.round(tomorrow.apparentMaxTemp)}°C
-• 🌧️ **Rain chance:** ${tomorrow.precipitationProbability}%
-• 💨 **Wind:** up to ${Math.round(tomorrow.windSpeedMax)} km/h from ${windDir}
-• ☀️ **UV Index:** ${Math.round(tomorrow.uvIndex)}
-• 🌅 **Sunrise:** ${formatTime(tomorrow.sunrise)}
-• 🌇 **Sunset:** ${formatTime(tomorrow.sunset)}`;
+• 🌡️ **Temperature:** ${Math.round(day.minTemp)}°C to ${Math.round(day.maxTemp)}°C
+• 🤗 **Feels like:** ${Math.round(day.apparentMinTemp)}°C to ${Math.round(day.apparentMaxTemp)}°C
+• 🌧️ **Rain chance:** ${day.precipitationProbability}%
+• 💨 **Wind:** up to ${Math.round(day.windSpeedMax)} km/h from ${windDir}
+• ☀️ **UV Index:** ${Math.round(day.uvIndex)}
+• 🌅 **Sunrise:** ${formatTime(day.sunrise)}
+• 🌇 **Sunset:** ${formatTime(day.sunset)}`;
+};
+
+const generateTomorrowResponse = (weather: WeatherData): string => {
+  return generateDayResponse(weather, 1, "Tomorrow's");
+};
+
+const generateDayAfterTomorrowResponse = (weather: WeatherData): string => {
+  return generateDayResponse(weather, 2, "Day after tomorrow's");
+};
+
+const generateSpecificDateResponse = (weather: WeatherData, specificDate: string): string => {
+  const targetDate = new Date(specificDate);
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const diffTime = targetDate.getTime() - today.getTime();
+  const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
+
+  if (diffDays < 0) {
+    return `Sorry, I can't show weather for past dates. Please ask about today or future dates.`;
+  }
+
+  if (diffDays > 6) {
+    return `Sorry, I can only show forecasts up to 7 days ahead. The date ${formatDate(specificDate)} is too far in the future.`;
+  }
+
+  const dateLabel = formatDate(specificDate);
+  return generateDayResponse(weather, diffDays, dateLabel);
 };
 
 const generateWeekResponse = (weather: WeatherData): string => {
@@ -253,8 +284,52 @@ ${weather.hourly.slice(0, 12).map(h => {
 }).join('\n')}`;
 };
 
-export const generateWeatherResponse = (query: string, weather: WeatherData): string => {
-  const intents = detectIntent(query);
+export const generateWeatherResponse = (
+  query: string,
+  weather: WeatherData,
+  aiIntent?: string | null,
+  aiTimeframe?: string | null,
+  aiSpecificDate?: string | null
+): string => {
+  // Handle specific date first
+  if (aiSpecificDate) {
+    return generateSpecificDateResponse(weather, aiSpecificDate);
+  }
+
+  // Handle day after tomorrow
+  if (aiTimeframe === 'day_after_tomorrow') {
+    return generateDayAfterTomorrowResponse(weather);
+  }
+
+  // Use AI-detected intent/timeframe if available, otherwise fall back to regex detection
+  let intents: QueryIntent[];
+
+  if (aiIntent || aiTimeframe) {
+    intents = [];
+    // Map timeframe to intent
+    if (aiTimeframe === 'tomorrow') intents.push('tomorrow');
+    if (aiTimeframe === 'week') intents.push('week');
+    if (aiTimeframe === 'hourly') intents.push('hourly');
+
+    // Map intent
+    if (aiIntent === 'temperature') intents.push('temperature');
+    if (aiIntent === 'rain') intents.push('rain');
+    if (aiIntent === 'wind') intents.push('wind');
+    if (aiIntent === 'humidity') intents.push('humidity');
+    if (aiIntent === 'uv') intents.push('uv');
+    if (aiIntent === 'sunrise_sunset') intents.push('sunrise_sunset');
+    if (aiIntent === 'forecast') intents.push('week');
+    if (aiIntent === 'hourly') intents.push('hourly');
+    if (aiIntent === 'tomorrow') intents.push('tomorrow');
+
+    // Default to current weather if no specific intent matched
+    if (intents.length === 0 || (aiIntent === 'current_weather' || aiIntent === 'general')) {
+      intents.push('current_weather');
+    }
+  } else {
+    intents = detectIntent(query);
+  }
+
   const responses: string[] = [];
   
   for (const intent of intents) {
