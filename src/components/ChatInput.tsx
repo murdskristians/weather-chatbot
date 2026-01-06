@@ -68,6 +68,13 @@ const ChatInput = ({
     }
   }, [input]);
 
+  // Refocus input after loading completes
+  useEffect(() => {
+    if (!isLoading && textareaRef.current) {
+      textareaRef.current.focus();
+    }
+  }, [isLoading]);
+
   return (
     <form onSubmit={handleSubmit} className="chat-input-form">
       <div className="chat-input-container">

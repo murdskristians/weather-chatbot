@@ -148,6 +148,47 @@ body {
   color: var(--text-primary);
 }
 
+.thinking-toggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  background: var(--bg-tertiary);
+  color: var(--text-muted);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: inherit;
+  font-size: 0.8rem;
+  font-weight: 500;
+}
+
+.thinking-toggle:hover {
+  background: #374151;
+  color: var(--text-secondary);
+}
+
+.thinking-toggle.active {
+  background: linear-gradient(135deg, rgba(139, 92, 246, 0.2) 0%, rgba(6, 182, 212, 0.2) 100%);
+  border-color: var(--accent-purple);
+  color: var(--accent-purple);
+}
+
+.thinking-toggle.active:hover {
+  background: linear-gradient(135deg, rgba(139, 92, 246, 0.3) 0%, rgba(6, 182, 212, 0.3) 100%);
+}
+
+.thinking-toggle .toggle-label {
+  display: none;
+}
+
+@media (min-width: 480px) {
+  .thinking-toggle .toggle-label {
+    display: inline;
+  }
+}
+
 .chat-container {
   flex: 1;
   overflow: hidden;

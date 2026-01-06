@@ -59,6 +59,7 @@ export const useChat = () => {
   ]);
   const [isLoading, setIsLoading] = useState(false);
   const [isThinking, setIsThinking] = useState(false);
+  const [thinkingMode, setThinkingMode] = useState(true);
   const [lastLocation, setLastLocation] = useState<GeoLocation | null>(null);
 
   // Re-translate all assistant messages when language changes
@@ -69,12 +70,14 @@ export const useChat = () => {
           if (msg.role === 'assistant' && msg.meta) {
             let newInsight = msg.insight;
             // Regenerate insight for weather messages if insights are enabled
-            if (msg.meta.type === 'weather' && msg.weatherData && isInsightEnabled()) {
+            if (msg.meta.type === 'weather' && msg.weatherData && isInsightEnabled() && thinkingMode) {
               newInsight = await generateWeatherInsight(
                 msg.weatherData,
                 msg.meta.aiIntent || null,
                 language
               );
+            } else if (!thinkingMode) {
+              newInsight = null;
             }
             return {
               ...msg,
@@ -89,7 +92,7 @@ export const useChat = () => {
     };
 
     regenerateMessages();
-  }, [language]);
+  }, [language, thinkingMode]);
 
   const addMessage = useCallback((
     role: 'user' | 'assistant',
@@ -161,9 +164,9 @@ export const useChat = () => {
 
       const weatherData = await fetchWeatherData(location);
 
-      // Generate AI insight if enabled
+      // Generate AI insight if enabled and thinking mode is on
       let insight: string | null = null;
-      if (isInsightEnabled()) {
+      if (isInsightEnabled() && thinkingMode) {
         setIsThinking(true);
         setIsLoading(false);
         insight = await generateWeatherInsight(weatherData, aiIntent, language);
@@ -197,7 +200,7 @@ export const useChat = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [addMessage, lastLocation, language]);
+  }, [addMessage, lastLocation, language, thinkingMode]);
 
   const clearChat = useCallback(() => {
     const currentTr = getTranslations(language);
@@ -221,6 +224,8 @@ export const useChat = () => {
     messages,
     isLoading,
     isThinking,
+    thinkingMode,
+    setThinkingMode,
     sendMessage: processQuery,
     clearChat,
     lastLocation,

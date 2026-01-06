@@ -5,11 +5,11 @@ import ChatInput from './components/ChatInput';
 import TypingIndicator from './components/TypingIndicator';
 import { LanguageSwitcher } from './components/LanguageSwitcher';
 import { getTranslations } from './utils/translations';
-import { CloudSun, Trash2 } from 'lucide-react';
+import { CloudSun, Trash2, Brain } from 'lucide-react';
 import './App.css';
 
 const App = () => {
-  const { messages, isLoading, isThinking, sendMessage, clearChat, userMessageHistory, language, setLanguage } = useChat();
+  const { messages, isLoading, isThinking, thinkingMode, setThinkingMode, sendMessage, clearChat, userMessageHistory, language, setLanguage } = useChat();
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const tr = getTranslations(language);
 
@@ -25,6 +25,14 @@ const App = () => {
           <h1>Weather AI</h1>
         </div>
         <div className="header-actions">
+          <button
+            onClick={() => setThinkingMode(!thinkingMode)}
+            className={`thinking-toggle ${thinkingMode ? 'active' : ''}`}
+            title={thinkingMode ? 'Thinking mode ON' : 'Thinking mode OFF'}
+          >
+            <Brain size={18} />
+            <span className="toggle-label">Thinking</span>
+          </button>
           <LanguageSwitcher language={language} onLanguageChange={setLanguage} />
           <button onClick={clearChat} className="clear-button" title="Clear chat">
             <Trash2 size={18} />
